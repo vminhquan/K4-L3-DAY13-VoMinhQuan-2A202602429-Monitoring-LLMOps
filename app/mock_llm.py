@@ -1,4 +1,5 @@
 from __future__ import annotations
+from app.tracing import observe
 
 import random
 import time
@@ -25,6 +26,7 @@ class FakeLLM:
     def __init__(self, model: str = "claude-sonnet-4-5") -> None:
         self.model = model
 
+    @observe(name="fake-llm-generate", as_type="generation")
     def generate(self, prompt: str) -> FakeResponse:
         started = time.perf_counter()
         time.sleep(0.05)  # mô phỏng thời điểm token đầu tiên sẵn sàng

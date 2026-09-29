@@ -1,4 +1,6 @@
 from __future__ import annotations
+from app.tracing import observe
+
 
 import time
 
@@ -10,7 +12,8 @@ CORPUS = {
     "policy": ["Do not expose PII in logs. Use sanitized summaries only."],
 }
 
-
+# chính xác hơn với Langfuse SDK v4 là dùng @observe decorator cho từng function
+@observe(name="retrieval", as_type="span")
 def retrieve(message: str) -> list[str]:
     if STATE["tool_fail"]:
         raise RuntimeError("Vector store timeout")

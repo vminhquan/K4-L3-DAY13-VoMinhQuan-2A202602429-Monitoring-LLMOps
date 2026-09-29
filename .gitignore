@@ -7,5 +7,6 @@ data/audit.jsonl
 .env
 # Lab Coach gửi riêng khi bắt đầu CP3; tuyệt đối không commit/push.
 config/challenge.json
+config/*challenge*.json
 .pytest_cache/
 .antigravity/

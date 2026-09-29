@@ -1,0 +1,18 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.11.0, pytest-8.3.5, pluggy-1.6.0
+rootdir: /Users/minhquanvo/Documents/aiinaction_lab/day13/K4-L3A-Day13-Monitoring-LLMOps
+plugins: anyio-4.15.1
+collected 22 items
+
+tests/test_agent_prompt_trace.py .                                       [  4%]
+tests/test_challenge_config.py ......                                    [ 31%]
+tests/test_chat_observability.py .                                       [ 36%]
+tests/test_cli_windows_encoding.py .                                     [ 40%]
+tests/test_dashboard_validator.py ...                                    [ 54%]
+tests/test_metrics.py .                                                  [ 59%]
+tests/test_pii.py ..                                                     [ 68%]
+tests/test_prompt_management.py ....                                     [ 86%]
+tests/test_tracing_adapter.py ..                                         [ 95%]
+tests/test_validate_logs.py .                                            [100%]
+
+============================== 22 passed in 0.83s ==============================
