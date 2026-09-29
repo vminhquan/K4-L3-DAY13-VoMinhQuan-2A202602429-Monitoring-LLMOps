@@ -32,8 +32,11 @@ async def lifespan(_: FastAPI):
     yield
 
 
+from .dashboard_api import router as dashboard_router
+
 app = FastAPI(title="Day 13 Monitoring & LLMOps Lab", lifespan=lifespan)
 app.add_middleware(CorrelationIdMiddleware)
+app.include_router(dashboard_router)
 
 
 @app.get("/health")

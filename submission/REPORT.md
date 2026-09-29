@@ -7,7 +7,7 @@
 - **Họ và tên:** Võ Minh Quân
 - **MSSV:** 2A202602429
 - **Lớp:** K4-L3A
-- **Repository URL:** https://github.com/VinUni-AI20k/K4-L3A-Day13-Monitoring-LLMOps.git
+- **Repository URL:** https://github.com/vminhquan/K4-L3-DAY13-VoMinhQuan-2A202602429-Monitoring-LLMOps.git
 - **Commit SHA cuối:** 13b606680ae4a3072eda90334959b632fe4ecba0
 - **Challenge ID:** day13-k4-l3a-monitoring-llmops-v1
 - **Tên project Langfuse cá nhân:** `day13-k4-l3a-2A202602429`

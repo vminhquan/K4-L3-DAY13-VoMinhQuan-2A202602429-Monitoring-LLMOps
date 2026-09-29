@@ -1,0 +1,1494 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VinUni AI20k — Day 13 Giám Sát & LLMOps Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #000000;
+      --card-bg: #0a0a0a;
+      --card-subtle: #111111;
+      --card-hover: #171717;
+      --border: rgba(255, 255, 255, 0.08);
+      --border-hover: rgba(255, 255, 255, 0.18);
+      --border-glow: rgba(0, 112, 243, 0.25);
+      
+      --text: #ededed;
+      --text-secondary: #888888;
+      --text-muted: #555555;
+      
+      --accent-blue: #0070f3;
+      --accent-blue-hover: #0091ff;
+      --accent-green: #00e599;
+      --accent-green-dim: rgba(0, 229, 153, 0.15);
+      --accent-amber: #f5a623;
+      --accent-amber-dim: rgba(245, 166, 35, 0.15);
+      --accent-red: #ff0055;
+      --accent-red-dim: rgba(255, 0, 85, 0.15);
+      --accent-purple: #7928ca;
+      
+      --font-sans: 'Geist', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      --radius: 8px;
+      --radius-lg: 12px;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+      --shadow-glow: 0 0 25px rgba(0, 112, 243, 0.15);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      overflow-x: hidden;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Glow backdrop gradient */
+    .glow-header {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 1000px;
+      height: 380px;
+      background: radial-gradient(ellipse 60% 40% at 50% -20%, rgba(0, 112, 243, 0.18), transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Top Navigation bar */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      background: rgba(0, 0, 0, 0.75);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-inner {
+      max-width: 1380px;
+      margin: 0 auto;
+      padding: 0 24px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--text);
+    }
+    .vercel-triangle {
+      width: 22px;
+      height: 22px;
+      fill: #ffffff;
+    }
+    .breadcrumb-slash {
+      color: var(--text-muted);
+      font-weight: 300;
+    }
+    .brand-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13.5px;
+      font-weight: 500;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 9px;
+      border-radius: 9999px;
+      font-size: 11.5px;
+      font-weight: 500;
+      border: 1px solid var(--border);
+      background: var(--card-subtle);
+    }
+    .badge-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent-green);
+      box-shadow: 0 0 8px var(--accent-green);
+    }
+    .badge-dot.alert {
+      background: var(--accent-red);
+      box-shadow: 0 0 8px var(--accent-red);
+    }
+    .badge-dot.pulse {
+      animation: pulseDot 2s infinite;
+    }
+    @keyframes pulseDot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--card-subtle);
+      color: var(--text);
+      transition: all 0.15s ease;
+      text-decoration: none;
+    }
+    .btn:hover {
+      background: var(--card-hover);
+      border-color: var(--border-hover);
+      color: #fff;
+    }
+    .btn-primary {
+      background: #ffffff;
+      color: #000000;
+      border-color: #ffffff;
+      font-weight: 600;
+    }
+    .btn-primary:hover {
+      background: #e6e6e6;
+      color: #000000;
+      box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+    }
+    .btn-danger {
+      background: var(--accent-red-dim);
+      border-color: rgba(255, 0, 85, 0.3);
+      color: var(--accent-red);
+    }
+    .btn-danger:hover {
+      background: rgba(255, 0, 85, 0.25);
+    }
+
+    /* Subheader Tabs */
+    .tabs-bar {
+      border-bottom: 1px solid var(--border);
+      background: rgba(0, 0, 0, 0.4);
+    }
+    .tabs-inner {
+      max-width: 1380px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: flex;
+      gap: 24px;
+      overflow-x: auto;
+    }
+    .tab-btn {
+      padding: 12px 2px;
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 13.5px;
+      font-weight: 500;
+      cursor: pointer;
+      position: relative;
+      white-space: nowrap;
+      transition: color 0.15s;
+    }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active {
+      color: #fff;
+      font-weight: 600;
+    }
+    .tab-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: #ffffff;
+      box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+    }
+
+    /* Main Container */
+    main {
+      max-width: 1380px;
+      margin: 0 auto;
+      padding: 32px 24px 80px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Hero section */
+    .hero-strip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .hero-title h1 {
+      font-size: 26px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .hero-desc {
+      color: var(--text-secondary);
+      font-size: 14px;
+      margin-top: 4px;
+    }
+    .hero-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* 6 Panels Grid */
+    .grid-panels {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    @media (max-width: 1024px) {
+      .grid-panels { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 640px) {
+      .grid-panels { grid-template-columns: 1fr; }
+    }
+
+    .panel-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .panel-card:hover {
+      border-color: var(--border-hover);
+      background: var(--card-hover);
+      transform: translateY(-2px);
+    }
+    .panel-card.warning {
+      border-color: rgba(245, 166, 35, 0.4);
+      background: linear-gradient(180deg, rgba(245, 166, 35, 0.05), var(--card-bg));
+    }
+    .panel-card.breached {
+      border-color: rgba(255, 0, 85, 0.4);
+      background: linear-gradient(180deg, rgba(255, 0, 85, 0.06), var(--card-bg));
+    }
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .panel-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .panel-value-row {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .panel-value {
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      font-family: var(--font-mono);
+    }
+    .panel-unit {
+      color: var(--text-secondary);
+      font-size: 13px;
+    }
+    .panel-subtext {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      padding-top: 10px;
+      margin-top: 12px;
+    }
+    .threshold-tag {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+    }
+
+    /* Visual mini sparkline */
+    .sparkline-svg {
+      width: 100%;
+      height: 36px;
+      margin-top: 6px;
+    }
+
+    /* Section card container */
+    .section-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+    }
+    .section-title {
+      font-size: 17px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Chat Playground */
+    .playground-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 24px;
+    }
+    @media (max-width: 900px) {
+      .playground-grid { grid-template-columns: 1fr; }
+    }
+    .input-group {
+      margin-bottom: 14px;
+    }
+    .input-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .text-input, .select-input {
+      width: 100%;
+      padding: 10px 14px;
+      background: #000000;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      transition: border-color 0.15s;
+    }
+    .text-input:focus, .select-input:focus {
+      outline: none;
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 1px var(--accent-blue);
+    }
+    .quick-queries {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .quick-btn {
+      background: var(--card-subtle);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .quick-btn:hover {
+      color: #fff;
+      border-color: var(--border-hover);
+      background: var(--card-hover);
+    }
+
+    /* Live Output Card */
+    .output-card {
+      background: #000000;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      min-height: 280px;
+      display: flex;
+      flex-direction: column;
+    }
+    .output-metrics {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .metric-pill {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: var(--card-subtle);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .output-text {
+      flex: 1;
+      font-size: 14px;
+      line-height: 1.6;
+      color: #dedede;
+      white-space: pre-wrap;
+    }
+
+    /* Waterfall visualizer */
+    .waterfall-container {
+      background: #000000;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-top: 12px;
+    }
+    .span-bar-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 12px;
+      gap: 12px;
+      font-size: 13px;
+    }
+    .span-name {
+      width: 170px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .span-track {
+      flex: 1;
+      height: 26px;
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 4px;
+      position: relative;
+      overflow: hidden;
+    }
+    .span-fill {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      padding: 0 8px;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      color: #fff;
+      font-weight: 500;
+      transition: width 0.3s ease;
+    }
+    .span-fill.root {
+      background: linear-gradient(90deg, #0070f3, #0091ff);
+    }
+    .span-fill.retrieval {
+      background: linear-gradient(90deg, #7928ca, #ff0080);
+    }
+    .span-fill.retrieval.slow {
+      background: linear-gradient(90deg, #f5a623, #ff0055);
+      animation: alertPulse 1.5s infinite;
+    }
+    .span-fill.generation {
+      background: linear-gradient(90deg, #00e599, #00b4d8);
+    }
+    @keyframes alertPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    /* Logs Table */
+    .table-container {
+      width: 100%;
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: #000000;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 13px;
+    }
+    th {
+      background: var(--card-subtle);
+      padding: 10px 14px;
+      color: var(--text-secondary);
+      font-weight: 500;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      border-bottom: 1px solid var(--border);
+    }
+    td {
+      padding: 10px 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      color: var(--text);
+    }
+    tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+    .cid-pill {
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      color: var(--accent-blue-hover);
+      cursor: pointer;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+    .redacted-tag {
+      background: var(--accent-green-dim);
+      color: var(--accent-green);
+      border: 1px solid rgba(0, 229, 153, 0.3);
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    /* Incident switch */
+    .incident-panel {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-top: 16px;
+    }
+    .switch-card {
+      background: #000000;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+    }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #222;
+      transition: .2s;
+      border-radius: 24px;
+      border: 1px solid var(--border);
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 16px; width: 16px;
+      left: 3px; bottom: 3px;
+      background-color: white;
+      transition: .2s;
+      border-radius: 50%;
+    }
+    input:checked + .slider {
+      background-color: var(--accent-red);
+      border-color: var(--accent-red);
+    }
+    input:checked + .slider:before {
+      transform: translateX(20px);
+    }
+
+    /* Prompt versioning diff */
+    .diff-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      margin-top: 16px;
+    }
+    .diff-box {
+      background: #000000;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      white-space: pre-wrap;
+      line-height: 1.6;
+    }
+    .diff-box.active-box {
+      border-color: var(--accent-green);
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 24px 0;
+      color: var(--text-secondary);
+      font-size: 12.5px;
+      text-align: center;
+      margin-top: 60px;
+    }
+    footer a {
+      color: var(--text);
+      text-decoration: none;
+    }
+    footer a:hover {
+      text-decoration: underline;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #111;
+      border: 1px solid var(--border-hover);
+      color: #fff;
+      padding: 12px 18px;
+      border-radius: var(--radius);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+      font-size: 13.5px;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(10px);
+      transition: all 0.25s ease;
+    }
+    .toast.show {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="glow-header"></div>
+
+  <!-- Top Header Navigation -->
+  <header>
+    <div class="nav-inner">
+      <div class="brand">
+        <!-- Vercel Triangle SVG -->
+        <svg class="vercel-triangle" viewBox="0 0 76 65" fill="none">
+          <path d="M37.5274 0L75.0548 65H0L37.5274 0Z" fill="currentColor"/>
+        </svg>
+        <span class="breadcrumb-slash">/</span>
+        <div class="brand-meta">
+          <span>VinUni AI20k</span>
+          <span class="breadcrumb-slash">/</span>
+          <span>K4-L3A LLMOps</span>
+          <span class="badge">
+            <span class="badge-dot pulse" id="global-status-dot"></span>
+            <span id="global-status-text">Hệ Thống Sẵn Sàng (Production)</span>
+          </span>
+        </div>
+      </div>
+
+      <div class="nav-actions">
+        <span class="badge" style="background: rgba(0, 112, 243, 0.1); border-color: rgba(0, 112, 243, 0.3); color: #0091ff;">
+          👤 Võ Minh Quân (2A202602429)
+        </span>
+        <button class="btn" onclick="triggerTraffic(5)">⚡ Giả Lập Tải (Traffic)</button>
+        <button class="btn btn-primary" onclick="openPlayground()">Kiểm Thử Chat Agent</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Sub-header Tabs -->
+  <div class="tabs-bar">
+    <div class="tabs-inner">
+      <button class="tab-btn active" onclick="switchTab('dashboard')">📊 Bảng Điều Khiển 6 Panel</button>
+      <button class="tab-btn" onclick="switchTab('playground')">💬 Thử Nghiệm Chat Agent</button>
+      <button class="tab-btn" onclick="switchTab('traces')">🔍 Phân Rã Trace (Waterfall)</button>
+      <button class="tab-btn" onclick="switchTab('logs')">📜 Nhật Ký Log & Lọc PII</button>
+      <button class="tab-btn" onclick="switchTab('prompts')">🔄 Quản Lý Prompt & Rollback</button>
+      <button class="tab-btn" onclick="switchTab('incident')">🚨 Trung Tâm Sự Cố (CP3)</button>
+    </div>
+  </div>
+
+  <main>
+    <!-- TAB 1: 6 PANELS DASHBOARD -->
+    <section id="tab-dashboard" class="tab-content">
+      <div class="hero-strip">
+        <div class="hero-title">
+          <h1>Bảng Điều Khiển Quan Sát (Observability Dashboard)</h1>
+          <p class="hero-desc">Theo dõi thời gian thực: phân vị độ trễ (latency), tỷ lệ lỗi, token tiêu thụ và chi phí theo cấu hình chuẩn <code>config/dashboard.yaml</code></p>
+        </div>
+        <div class="hero-controls">
+          <span class="badge" id="refresh-badge">Tự động cập nhật: 5s</span>
+          <button class="btn" onclick="loadDashboard()">🔄 Làm Mới Ngay</button>
+        </div>
+      </div>
+
+      <!-- 6 Panels Grid -->
+      <div class="grid-panels">
+        <!-- Panel 1: Latency & TTFT -->
+        <div class="panel-card" id="card-latency">
+          <div class="panel-header">
+            <span class="panel-title">1. Phân Vị Độ Trễ & TTFT</span>
+            <span class="threshold-tag">SLO: P95 ≤ 3000ms</span>
+          </div>
+          <div class="panel-value-row">
+            <span class="panel-value" id="val-latency-p95">--</span>
+            <span class="panel-unit">ms (P95)</span>
+          </div>
+          <div style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 6px;">
+            P50: <b id="val-latency-p50" style="color: #fff;">--</b> ms | P99: <b id="val-latency-p99" style="color: #fff;">--</b> ms | TTFT P95: <b id="val-ttft-p95" style="color: var(--accent-green);">--</b> ms
+          </div>
+          <svg class="sparkline-svg" id="chart-latency" viewBox="0 0 300 40"></svg>
+          <div class="panel-subtext">
+            <span>Trạng thái: <b id="status-latency" style="color: var(--accent-green)">Bình thường (Đạt SLO)</b></span>
+            <span>Khung 60 phút</span>
+          </div>
+        </div>
+
+        <!-- Panel 2: Traffic -->
+        <div class="panel-card" id="card-traffic">
+          <div class="panel-header">
+            <span class="panel-title">2. Lưu Lượng Yêu Cầu (Traffic)</span>
+            <span class="threshold-tag">Ngưỡng: ≥ 1 RPM</span>
+          </div>
+          <div class="panel-value-row">
+            <span class="panel-value" id="val-traffic-count">--</span>
+            <span class="panel-unit">tổng yêu cầu</span>
+          </div>
+          <div style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 6px;">
+            Tốc độ: <b id="val-traffic-rate" style="color: #fff;">--</b> yêu cầu / phút
+          </div>
+          <svg class="sparkline-svg" id="chart-traffic" viewBox="0 0 300 40"></svg>
+          <div class="panel-subtext">
+            <span>Dịch vụ: <b>api / claude-sonnet-4-5</b></span>
+            <span>Hoạt động tốt</span>
+          </div>
+        </div>
+
+        <!-- Panel 3: Errors & Tool Success -->
+        <div class="panel-card" id="card-errors">
+          <div class="panel-header">
+            <span class="panel-title">3. Tỷ Lệ Lỗi & Thành Công Tool</span>
+            <span class="threshold-tag">Ngưỡng: ≤ 2%</span>
+          </div>
+          <div class="panel-value-row">
+            <span class="panel-value" id="val-error-rate" style="color: var(--accent-green);">0.0%</span>
+            <span class="panel-unit">tỷ lệ lỗi</span>
+          </div>
+          <div style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 6px;">
+            Công cụ RAG Retrieval thành công: <b id="val-tool-success" style="color: var(--accent-green);">100%</b>
+          </div>
+          <svg class="sparkline-svg" id="chart-errors" viewBox="0 0 300 40"></svg>
+          <div class="panel-subtext">
+            <span>Số lỗi: <b id="val-fail-count">0</b> yêu cầu</span>
+            <span>0 lỗi HTTP 5xx</span>
+          </div>
+        </div>
+
+        <!-- Panel 4: Cost Over Time -->
+        <div class="panel-card" id="card-cost">
+          <div class="panel-header">
+            <span class="panel-title">4. Theo Dõi Chi Phí (Cost)</span>
+            <span class="threshold-tag">Ngưỡng: ≤ $2.50</span>
+          </div>
+          <div class="panel-value-row">
+            <span class="panel-value" id="val-cost-total">$0.000</span>
+            <span class="panel-unit">USD tổng cộng</span>
+          </div>
+          <div style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 6px;">
+            Ước tính: <b id="val-cost-rate" style="color: #fff;">$0.0018</b> / yêu cầu
+          </div>
+          <svg class="sparkline-svg" id="chart-cost" viewBox="0 0 300 40"></svg>
+          <div class="panel-subtext">
+            <span>Ngân sách đã dùng: <b>0.4%</b></span>
+            <span>Trong ngưỡng an toàn</span>
+          </div>
+        </div>
+
+        <!-- Panel 5: Token Consumption -->
+        <div class="panel-card" id="card-tokens">
+          <div class="panel-header">
+            <span class="panel-title">5. Tiêu Thụ Token (Tokens)</span>
+            <span class="threshold-tag">Ngưỡng: ≤ 50,000</span>
+          </div>
+          <div class="panel-value-row">
+            <span class="panel-value" id="val-tokens-total">--</span>
+            <span class="panel-unit">tokens</span>
+          </div>
+          <div style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 6px;">
+            Đầu vào: <b id="val-tokens-in" style="color: #0091ff;">--</b> | Đầu ra: <b id="val-tokens-out" style="color: #00e599;">--</b>
+          </div>
+          <svg class="sparkline-svg" id="chart-tokens" viewBox="0 0 300 40"></svg>
+          <div class="panel-subtext">
+            <span>Mô hình: <b>claude-sonnet-4-5</b></span>
+            <span>Đúng định mức</span>
+          </div>
+        </div>
+
+        <!-- Panel 6: Quality Proxy -->
+        <div class="panel-card" id="card-quality">
+          <div class="panel-header">
+            <span class="panel-title">6. Điểm Chất Lượng (Quality Score)</span>
+            <span class="threshold-tag">Ngưỡng: ≥ 0.75</span>
+          </div>
+          <div class="panel-value-row">
+            <span class="panel-value" id="val-quality-mean" style="color: var(--accent-green);">0.85</span>
+            <span class="panel-unit">/ 1.0</span>
+          </div>
+          <div style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 6px;">
+            Heuristic: Độ dài câu trả lời, khớp context RAG, an toàn PII
+          </div>
+          <svg class="sparkline-svg" id="chart-quality" viewBox="0 0 300 40"></svg>
+          <div class="panel-subtext">
+            <span>Chất lượng: <b style="color: var(--accent-green);">Tối ưu</b></span>
+            <span>Đánh giá trực tiếp</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: LIVE AGENT PLAYGROUND -->
+    <section id="tab-playground" class="tab-content" style="display: none;">
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-title">
+            <span>💬 Thử Nghiệm Tương Tác Với Chat Agent</span>
+          </div>
+          <span class="badge" style="background: rgba(0, 112, 243, 0.1); color: #0091ff;">FastAPI + Langfuse Tích Hợp</span>
+        </div>
+
+        <div class="playground-grid">
+          <div>
+            <div class="input-group">
+              <label class="input-label">Nội Dung Câu Hỏi / Prompt</label>
+              <textarea id="play-message" rows="4" class="text-input" placeholder="Nhập câu hỏi để thử nghiệm agent...">Explain why metrics traces and logs work together.</textarea>
+              <div class="quick-queries">
+                <button class="quick-btn" onclick="setQuery('Explain why metrics traces and logs work together.', 'monitoring')">Câu hỏi Challenge: Metrics/Logs/Traces</button>
+                <button class="quick-btn" onclick="setQuery('How should an engineer investigate tail latency?', 'monitoring')">Câu hỏi Challenge: Tail Latency</button>
+                <button class="quick-btn" onclick="setQuery('Kiểm tra che PII: student@vinuni.edu.vn, phone 0987654321, cccd 001234567890', 'qa')">Kiểm Thử Lọc PII (Email, Phone, CCCD)</button>
+                <button class="quick-btn" onclick="setQuery('Summarize refund policy for software license.', 'refund')">Tính năng: Chính sách hoàn tiền</button>
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              <div class="input-group">
+                <label class="input-label">Tính Năng (Feature)</label>
+                <select id="play-feature" class="select-input">
+                  <option value="monitoring" selected>monitoring</option>
+                  <option value="qa">qa</option>
+                  <option value="summary">summary</option>
+                </select>
+              </div>
+              <div class="input-group">
+                <label class="input-label">Phiên Làm Việc (Session ID)</label>
+                <input id="play-session" type="text" class="text-input" value="k4-demo-session-01">
+              </div>
+            </div>
+
+            <button class="btn btn-primary" style="width: 100%; justify-content: center; padding: 12px;" onclick="sendChat()" id="btn-send-chat">
+              🚀 Thực Thi Yêu Cầu (/chat)
+            </button>
+          </div>
+
+          <div>
+            <label class="input-label">Kết Quả Phản Hồi & Thông Số Quan Sát (Observability)</label>
+            <div class="output-card" id="output-box">
+              <div class="output-metrics">
+                <span class="metric-pill">Mã CID: <span id="out-cid" style="color: var(--accent-blue-hover)">req-san-sang</span></span>
+                <span class="metric-pill">Độ trễ: <span id="out-latency">--</span></span>
+                <span class="metric-pill">TTFT: <span id="out-ttft" style="color: var(--accent-green)">--</span></span>
+                <span class="metric-pill">Tokens: <span id="out-tokens">--</span></span>
+                <span class="metric-pill">Chi phí: <span id="out-cost">--</span></span>
+                <span class="metric-pill">Chất lượng: <span id="out-quality">--</span></span>
+              </div>
+              <div class="output-text" id="out-text">Bấm "Thực Thi Yêu Cầu" ở bên trái để gửi request. Câu trả lời, độ trễ toàn trình, thời gian ra token đầu tiên (TTFT), chi phí và khả năng lọc PII sẽ hiển thị trực tiếp tại đây.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: TRACES & WATERFALL -->
+    <section id="tab-traces" class="tab-content" style="display: none;">
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-title">
+            <span>🔍 Biểu Đồ Phân Rã Trace (Waterfall Timeline)</span>
+          </div>
+          <span class="badge">Dự án Langfuse: day13-k4-l3a-2A202602429</span>
+        </div>
+        <p style="color: var(--text-secondary); font-size: 13.5px; margin-bottom: 20px;">
+          Bóc tách trực quan các quan sát cha-con theo chuẩn Langfuse SDK v4: <code>agent-run</code> (Root Span) ➔ <code>retrieval</code> (Child Span) ➔ <code>fake-llm-generate</code> (Child Generation).
+        </p>
+
+        <div id="traces-list-container">
+          <!-- Dynamically populated waterfall cards -->
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: STRUCTURED LOGS & PII EXPLORER -->
+    <section id="tab-logs" class="tab-content" style="display: none;">
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-title">
+            <span>📜 Khám Phá Nhật Ký Structured Logs & Kiểm Tra Lọc PII</span>
+          </div>
+          <span class="badge" style="background: var(--accent-green-dim); color: var(--accent-green); border-color: rgba(0,229,153,0.3)">
+            ✓ Đã Xác Minh 0 Rò Rỉ PII (Điểm: 100/100)
+          </span>
+        </div>
+
+        <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+          <input type="text" id="log-search" class="text-input" placeholder="Tìm kiếm theo Correlation ID, sự kiện, tính năng..." oninput="filterLogs()">
+          <select id="log-event-filter" class="select-input" style="width: 220px;" onchange="filterLogs()">
+            <option value="">Tất cả sự kiện</option>
+            <option value="request_received">request_received (Nhận yêu cầu)</option>
+            <option value="response_sent">response_sent (Đã gửi phản hồi)</option>
+            <option value="request_failed">request_failed (Yêu cầu thất bại)</option>
+          </select>
+        </div>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Thời Gian (UTC)</th>
+                <th>Sự Kiện</th>
+                <th>Mã Correlation ID</th>
+                <th>Tính Năng</th>
+                <th>Độ Trễ</th>
+                <th>TTFT</th>
+                <th>Dữ Liệu Payload (Đã Lọc Sạch PII)</th>
+              </tr>
+            </thead>
+            <tbody id="logs-tbody">
+              <!-- Logs populated dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 5: PROMPT MANAGEMENT & ROLLBACK -->
+    <section id="tab-prompts" class="tab-content" style="display: none;">
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-title">
+            <span>🔄 Quản Lý Phiên Bản Prompt & Rollback Tức Thì</span>
+          </div>
+          <span class="badge" id="active-prompt-badge">Đang dùng: day13-chat@production (v2)</span>
+        </div>
+        <p style="color: var(--text-secondary); font-size: 13.5px;">
+          Phát hành phiên bản prompt ứng viên lên môi trường production hoặc thực hiện <b>Rollback tức thì</b> về phiên bản ổn định trước đó mà không cần khởi động lại dịch vụ.
+        </p>
+
+        <div style="display: flex; gap: 12px; margin-top: 18px;">
+          <button class="btn btn-primary" onclick="switchPromptVersion('2')">Áp Dụng Version 2 (Production)</button>
+          <button class="btn btn-danger" onclick="switchPromptVersion('1')">⏪ Rollback về Version 1 (Baseline)</button>
+          <button class="btn" onclick="switchPromptVersion('3')">Thử Nghiệm Version 3 (Candidate)</button>
+        </div>
+
+        <div class="diff-container">
+          <div class="diff-box" id="diff-v1">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+              <b>Version 1 (Phiên Bản Gốc - Baseline)</b>
+              <span class="threshold-tag">v1 • baseline</span>
+            </div>
+Feature={feature}
+Docs={docs}
+Question={message}
+
+Answer concisely and helpfully.
+          </div>
+
+          <div class="diff-box active-box" id="diff-v2">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+              <b style="color: var(--accent-green)">Version 2 (Đang Chạy Production)</b>
+              <span class="threshold-tag" style="border-color: var(--accent-green); color: var(--accent-green)">v2 • production</span>
+            </div>
+Feature={feature}
+Context={docs}
+User Question={message}
+
+Provide an accurate, policy-compliant answer. Redact all PII.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 6: INCIDENT CENTER (CP3 CHALLENGE) -->
+    <section id="tab-incident" class="tab-content" style="display: none;">
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-title">
+            <span>🚨 Trung Tâm Kiểm Soát Sự Cố & Phân Tích Nguyên Nhân Gốc (RCA)</span>
+          </div>
+          <span class="badge" style="background: rgba(245, 166, 35, 0.15); color: var(--accent-amber); border-color: rgba(245, 166, 35, 0.4)">
+            Mã Challenge: day13-k4-l3a-monitoring-llmops-v1
+          </span>
+        </div>
+
+        <p style="color: var(--text-secondary); font-size: 13.5px;">
+          Mô phỏng các sự cố chính thức của bài Challenge để thực hành quy trình điều tra chuẩn 3 bước: <b>Metrics</b> (Phát hiện bất thường) ➔ <b>Logs</b> (Lọc Correlation ID) ➔ <b>Traces</b> (Khoanh vùng span gây nghẽn).
+        </p>
+
+        <div class="incident-panel">
+          <div class="switch-card">
+            <div>
+              <b style="display: block; font-size: 14px;">rag_slow</b>
+              <span style="font-size: 12px; color: var(--text-secondary);">Trễ 2.5s tại khâu truy xuất RAG (CP3)</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-rag-slow" onchange="toggleIncident('rag_slow', this.checked)">
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="switch-card">
+            <div>
+              <b style="display: block; font-size: 14px;">cost_spike</b>
+              <span style="font-size: 12px; color: var(--text-secondary);">Nhân 4 lần lượng token đầu ra</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-cost-spike" onchange="toggleIncident('cost_spike', this.checked)">
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="switch-card">
+            <div>
+              <b style="display: block; font-size: 14px;">tool_fail</b>
+              <span style="font-size: 12px; color: var(--text-secondary);">Lỗi sập vector store (Mô phỏng 500)</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-tool-fail" onchange="toggleIncident('tool_fail', this.checked)">
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- RCA Triad Walkthrough -->
+        <div style="margin-top: 28px; background: #000; border: 1px solid var(--border); border-radius: var(--radius); padding: 18px;">
+          <h3 style="font-size: 15px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+            <span>🔬 Quy Trình Chẩn Đoán Sự Cố Chính Thức (Triad RCA)</span>
+          </h3>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; font-size: 13px;">
+            <div style="background: var(--card-subtle); padding: 14px; border-radius: var(--radius); border: 1px solid var(--border);">
+              <b style="color: var(--accent-amber); display: block; margin-bottom: 4px;">1. Triệu Chứng Metric</b>
+              Độ trễ P95 tăng vọt từ mức baseline ~165ms lên <b>2660ms – 4673ms</b> trên panel Latency. TTFT vẫn bình thường (~52ms).
+            </div>
+            <div style="background: var(--card-subtle); padding: 14px; border-radius: var(--radius); border: 1px solid var(--border);">
+              <b style="color: var(--accent-blue-hover); display: block; margin-bottom: 4px;">2. Mối Liên Hệ Log</b>
+              Lọc file <code>data/logs.jsonl</code> theo <code>feature=monitoring</code> để tìm các Correlation ID bị ảnh hưởng: <code>req-d33ea19b</code>, <code>req-e864ce7a</code>.
+            </div>
+            <div style="background: var(--card-subtle); padding: 14px; border-radius: var(--radius); border: 1px solid var(--border);">
+              <b style="color: var(--accent-green); display: block; margin-bottom: 4px;">3. Nguyên Nhân Gốc Trace</b>
+              Biểu đồ Waterfall chỉ ra span con <code>retrieval</code> tiêu tốn <b>2.50s (chiếm 95%)</b> tổng thời gian request. Khâu sinh LLM chỉ mất 0.15s.
+            </div>
+          </div>
+          <div style="margin-top: 16px; display: flex; justify-content: flex-end;">
+            <button class="btn btn-primary" onclick="remediateIncident()">✓ Áp Dụng Khắc Phục (Tắt Tất Cả Sự Cố)</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div style="max-width: 1380px; margin: 0 auto; padding: 0 24px;">
+      VinUni AI20k • K4-L3A Day 13 Giám Sát & LLMOps Platform • Học Viên: Võ Minh Quân (2A202602429) • Giao diện chuẩn Vercel
+    </div>
+  </footer>
+
+  <div id="toast" class="toast">Thao tác hoàn thành thành công</div>
+
+  <script>
+    let currentLogs = [];
+    let currentTraces = [];
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.innerText = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 3000);
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+      
+      const targetBtn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick').includes(tabId));
+      if (targetBtn) targetBtn.classList.add('active');
+      
+      const targetSection = document.getElementById('tab-' + tabId);
+      if (targetSection) targetSection.style.display = 'block';
+
+      if (tabId === 'traces') loadTraces();
+      if (tabId === 'logs') loadLogs();
+    }
+
+    function openPlayground() {
+      switchTab('playground');
+    }
+
+    function setQuery(text, feature) {
+      document.getElementById('play-message').value = text;
+      document.getElementById('play-feature').value = feature;
+    }
+
+    // Draw SVG sparkline
+    function renderSparkline(svgId, data, color) {
+      const svg = document.getElementById(svgId);
+      if (!svg || !data || data.length === 0) return;
+      const w = 300, h = 40;
+      const min = Math.min(...data);
+      const max = Math.max(...data);
+      const range = max - min || 1;
+      
+      const pts = data.map((v, i) => {
+        const x = (i / (data.length - 1 || 1)) * w;
+        const y = h - ((v - min) / range) * (h - 8) - 4;
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      }).join(' ');
+
+      svg.innerHTML = `
+        <polyline fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" points="${pts}" />
+      `;
+    }
+
+    async function loadDashboard() {
+      try {
+        const res = await fetch('/api/dashboard-data');
+        const data = await res.json();
+        const p = data.panels;
+
+        // Panel 1: Latency
+        document.getElementById('val-latency-p95').innerText = p.latency.p95;
+        document.getElementById('val-latency-p50').innerText = p.latency.p50;
+        document.getElementById('val-latency-p99').innerText = p.latency.p99;
+        document.getElementById('val-ttft-p95').innerText = p.latency.ttft_p95;
+        
+        const cardLat = document.getElementById('card-latency');
+        const stLat = document.getElementById('status-latency');
+        cardLat.className = 'panel-card ' + p.latency.status;
+        if (p.latency.status === 'breached') {
+          stLat.innerText = 'Vi Phạm SLO (> 3000ms)';
+          stLat.style.color = 'var(--accent-red)';
+        } else if (p.latency.status === 'warning') {
+          stLat.innerText = 'Cảnh Báo (> 2000ms)';
+          stLat.style.color = 'var(--accent-amber)';
+        } else {
+          stLat.innerText = 'Bình Thường (Đạt SLO)';
+          stLat.style.color = 'var(--accent-green)';
+        }
+
+        // Panel 2: Traffic
+        document.getElementById('val-traffic-count').innerText = p.traffic.count;
+        document.getElementById('val-traffic-rate').innerText = p.traffic.rate_per_minute;
+
+        // Panel 3: Errors
+        document.getElementById('val-error-rate').innerText = p.errors.error_rate_pct + '%';
+        document.getElementById('val-tool-success').innerText = p.errors.tool_success_rate_pct + '%';
+        document.getElementById('val-fail-count').innerText = p.errors.failed_count;
+        document.getElementById('card-errors').className = 'panel-card ' + p.errors.status;
+
+        // Panel 4: Cost
+        document.getElementById('val-cost-total').innerText = '$' + p.cost.total_usd.toFixed(4);
+        document.getElementById('card-cost').className = 'panel-card ' + p.cost.status;
+
+        // Panel 5: Tokens
+        document.getElementById('val-tokens-total').innerText = p.tokens.total_tokens.toLocaleString();
+        document.getElementById('val-tokens-in').innerText = p.tokens.tokens_in.toLocaleString();
+        document.getElementById('val-tokens-out').innerText = p.tokens.tokens_out.toLocaleString();
+        document.getElementById('card-tokens').className = 'panel-card ' + p.tokens.status;
+
+        // Panel 6: Quality
+        document.getElementById('val-quality-mean').innerText = p.quality.mean_quality;
+        document.getElementById('card-quality').className = 'panel-card ' + p.quality.status;
+
+        // Render sparklines from timeline
+        if (data.timeline && data.timeline.length > 0) {
+          const latData = data.timeline.map(t => t.latency_ms);
+          renderSparkline('chart-latency', latData, p.latency.p95 > 2000 ? '#f5a623' : '#0070f3');
+
+          const costData = data.timeline.map(t => t.cost_usd);
+          renderSparkline('chart-cost', costData, '#00e599');
+
+          const tokenData = data.timeline.map(t => t.tokens);
+          renderSparkline('chart-tokens', tokenData, '#7928ca');
+
+          const qualityData = data.timeline.map(t => t.quality_score);
+          renderSparkline('chart-quality', qualityData, '#0091ff');
+        }
+
+        // Incident switches sync
+        if (data.incidents) {
+          document.getElementById('toggle-rag-slow').checked = !!data.incidents.rag_slow;
+          document.getElementById('toggle-cost-spike').checked = !!data.incidents.cost_spike;
+          document.getElementById('toggle-tool-fail').checked = !!data.incidents.tool_fail;
+          
+          const dot = document.getElementById('global-status-dot');
+          const txt = document.getElementById('global-status-text');
+          if (data.incidents.rag_slow || data.incidents.cost_spike || data.incidents.tool_fail) {
+            dot.className = 'badge-dot alert pulse';
+            txt.innerText = 'Đang Có Sự Cố (' + Object.keys(data.incidents).filter(k => data.incidents[k]).join(', ') + ')';
+            txt.style.color = 'var(--accent-red)';
+          } else {
+            dot.className = 'badge-dot pulse';
+            txt.innerText = 'Hệ Thống Sẵn Sàng (Production)';
+            txt.style.color = 'var(--text)';
+          }
+        }
+      } catch (err) {
+        console.error('Lỗi khi tải dữ liệu bảng điều khiển:', err);
+      }
+    }
+
+    async function sendChat() {
+      const msg = document.getElementById('play-message').value.trim();
+      const feat = document.getElementById('play-feature').value;
+      const sess = document.getElementById('play-session').value.trim();
+      const btn = document.getElementById('btn-send-chat');
+
+      if (!msg) return;
+      btn.innerText = '⏳ Đang xử lý...';
+      btn.disabled = true;
+
+      try {
+        const res = await fetch('/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: 'student-demo',
+            session_id: sess || 'session-demo',
+            feature: feat,
+            message: msg
+          })
+        });
+
+        const data = await res.json();
+        btn.innerText = '🚀 Thực Thi Yêu Cầu (/chat)';
+        btn.disabled = false;
+
+        document.getElementById('out-cid').innerText = data.correlation_id || '--';
+        document.getElementById('out-latency').innerText = (data.latency_ms || 0) + 'ms';
+        document.getElementById('out-ttft').innerText = (data.ttft_ms || 0) + 'ms';
+        document.getElementById('out-tokens').innerText = `${data.tokens_in || 0} vào / ${data.tokens_out || 0} ra`;
+        document.getElementById('out-cost').innerText = '$' + (data.cost_usd || 0).toFixed(4);
+        document.getElementById('out-quality').innerText = data.quality_score || '0.85';
+        document.getElementById('out-text').innerText = data.answer || 'Không có câu trả lời trả về.';
+
+        showToast('Yêu cầu hoàn thành • ' + data.latency_ms + 'ms');
+        loadDashboard();
+      } catch (e) {
+        btn.innerText = '🚀 Thực Thi Yêu Cầu (/chat)';
+        btn.disabled = false;
+        document.getElementById('out-text').innerText = 'Lỗi: ' + e.message;
+      }
+    }
+
+    async function loadTraces() {
+      const container = document.getElementById('traces-list-container');
+      container.innerHTML = '<div style="color: var(--text-secondary); padding: 20px;">Đang tải danh sách trace...</div>';
+      try {
+        const res = await fetch('/api/traces');
+        const data = await res.json();
+        currentTraces = data.traces || [];
+
+        if (currentTraces.length === 0) {
+          container.innerHTML = '<div style="color: var(--text-secondary); padding: 20px;">Chưa có trace nào. Vui lòng gửi một request trước.</div>';
+          return;
+        }
+
+        container.innerHTML = currentTraces.map(t => {
+          const maxMs = Math.max(t.duration_ms, 200);
+          const isSlow = t.duration_ms >= 2000;
+
+          const spansHtml = t.spans.map(s => {
+            const widthPct = Math.max(8, Math.min(100, (s.duration_ms / maxMs) * 100)).toFixed(1);
+            const leftPct = Math.min(90, (s.start_offset_ms / maxMs) * 100).toFixed(1);
+            const spanClass = s.type === 'root' ? 'root' : (s.type === 'generation' ? 'generation' : (s.status === 'slow' ? 'retrieval slow' : 'retrieval'));
+
+            return `
+              <div class="span-bar-row">
+                <div class="span-name" title="${s.name}">${s.name} (${s.duration_ms}ms)</div>
+                <div class="span-track">
+                  <div class="span-fill ${spanClass}" style="left: ${leftPct}%; width: ${widthPct}%;">
+                    ${s.duration_ms}ms ${s.output ? '• ' + s.output : ''} ${s.tokens ? '• ' + s.tokens : ''}
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('');
+
+          return `
+            <div class="waterfall-container" style="${isSlow ? 'border-color: rgba(245, 166, 35, 0.4);' : ''}">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <div>
+                  <span class="cid-pill" onclick="inspectTrace('${t.correlation_id}')">${t.correlation_id}</span>
+                  <span style="font-size: 12px; color: var(--text-secondary); margin-left: 10px;">Tính năng: <b>${t.feature}</b> • Model: <b>${t.model}</b></span>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <span class="threshold-tag">Prompt: ${t.prompt_version ? 'v' + t.prompt_version : 'v2'} (${t.prompt_label})</span>
+                  <span class="badge" style="font-family: var(--font-mono);">${t.duration_ms}ms</span>
+                </div>
+              </div>
+              ${spansHtml}
+            </div>
+          `;
+        }).join('');
+      } catch (err) {
+        container.innerHTML = '<div style="color: var(--accent-red); padding: 20px;">Lỗi khi tải danh sách trace.</div>';
+      }
+    }
+
+    async function loadLogs() {
+      try {
+        const res = await fetch('/api/logs?limit=50');
+        const data = await res.json();
+        currentLogs = data.logs || [];
+        renderLogsTable(currentLogs);
+      } catch (err) {
+        console.error('Lỗi khi tải logs:', err);
+      }
+    }
+
+    function renderLogsTable(logs) {
+      const tbody = document.getElementById('logs-tbody');
+      tbody.innerHTML = logs.map(l => {
+        let payloadStr = l.payload ? JSON.stringify(l.payload) : '';
+        // Highlight PII badges
+        payloadStr = payloadStr
+          .replace(/\[REDACTED_EMAIL\]/g, '<span class="redacted-tag">[REDACTED_EMAIL]</span>')
+          .replace(/\[REDACTED_PHONE\]/g, '<span class="redacted-tag">[REDACTED_PHONE]</span>')
+          .replace(/\[REDACTED_CCCD\]/g, '<span class="redacted-tag">[REDACTED_CCCD]</span>')
+          .replace(/\[REDACTED_CARD\]/g, '<span class="redacted-tag">[REDACTED_CARD]</span>');
+
+        return `
+          <tr>
+            <td style="font-family: var(--font-mono); font-size: 11.5px; color: var(--text-secondary);">${l.ts ? l.ts.substring(11, 23) : '--'}</td>
+            <td><span class="badge" style="font-size: 11px;">${l.event || 'info'}</span></td>
+            <td><span class="cid-pill" onclick="inspectTrace('${l.correlation_id}')">${l.correlation_id || '--'}</span></td>
+            <td>${l.feature || '--'}</td>
+            <td style="font-family: var(--font-mono);">${l.latency_ms ? l.latency_ms + 'ms' : '--'}</td>
+            <td style="font-family: var(--font-mono); color: var(--accent-green);">${l.ttft_ms ? l.ttft_ms + 'ms' : '--'}</td>
+            <td style="font-size: 12px; max-width: 400px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${payloadStr}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function filterLogs() {
+      const q = document.getElementById('log-search').value.toLowerCase();
+      const evt = document.getElementById('log-event-filter').value;
+      const filtered = currentLogs.filter(l => {
+        if (evt && l.event !== evt) return false;
+        if (q && !JSON.stringify(l).toLowerCase().includes(q)) return false;
+        return true;
+      });
+      renderLogsTable(filtered);
+    }
+
+    async function switchPromptVersion(ver) {
+      try {
+        const res = await fetch('/api/prompts/switch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ version: ver })
+        });
+        const data = await res.json();
+        showToast(data.message);
+        document.getElementById('active-prompt-badge').innerText = `Đang dùng: day13-chat@production (v${ver})`;
+        
+        document.getElementById('diff-v1').className = 'diff-box ' + (ver === '1' ? 'active-box' : '');
+        document.getElementById('diff-v2').className = 'diff-box ' + (ver === '2' ? 'active-box' : '');
+      } catch (err) {
+        showToast('Lỗi khi chuyển đổi phiên bản prompt');
+      }
+    }
+
+    async function toggleIncident(name, enabled) {
+      const url = enabled ? `/incidents/${name}/enable` : `/incidents/${name}/disable`;
+      try {
+        const res = await fetch(url, { method: 'POST' });
+        const data = await res.json();
+        showToast(`Sự cố ${name} ${enabled ? 'ĐÃ BẬT' : 'ĐÃ TẮT'}`);
+        loadDashboard();
+      } catch (err) {
+        showToast(`Không thể bật/tắt sự cố ${name}`);
+      }
+    }
+
+    async function remediateIncident() {
+      await toggleIncident('rag_slow', false);
+      await toggleIncident('cost_spike', false);
+      await toggleIncident('tool_fail', false);
+      document.getElementById('toggle-rag-slow').checked = false;
+      document.getElementById('toggle-cost-spike').checked = false;
+      document.getElementById('toggle-tool-fail').checked = false;
+      showToast('Đã khắc phục mọi sự cố. Hệ thống đã trở lại bình thường.');
+      loadDashboard();
+    }
+
+    async function triggerTraffic(count) {
+      showToast(`Đang sinh ${count} yêu cầu mẫu...`);
+      try {
+        await fetch('/api/simulate-traffic', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ count: count })
+        });
+        showToast('Đã sinh traffic mẫu thành công');
+        loadDashboard();
+      } catch (err) {
+        showToast('Lỗi khi sinh traffic mẫu');
+      }
+    }
+
+    function inspectTrace(cid) {
+      switchTab('traces');
+      showToast('Đang chọn trace: ' + cid);
+    }
+
+    // Khởi tạo khi tải trang
+    window.addEventListener('DOMContentLoaded', () => {
+      loadDashboard();
+      setInterval(loadDashboard, 5000);
+    });
+  </script>
+</body>
+</html>
