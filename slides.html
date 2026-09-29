@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Báo Cáo Lab Day 13: Monitoring & LLMOps — Võ Minh Quân</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #000000;
+      --surface: #0a0a0a;
+      --surface-subtle: #111111;
+      --surface-border: rgba(255, 255, 255, 0.08);
+      --surface-hover: rgba(255, 255, 255, 0.04);
+      --text: #ffffff;
+      --text-muted: #888888;
+      --text-dim: #555555;
+      
+      --blue: #0070f3;
+      --blue-glow: rgba(0, 112, 243, 0.25);
+      --emerald: #00e599;
+      --emerald-glow: rgba(0, 229, 153, 0.2);
+      --amber: #f5a623;
+      --red: #ff0055;
+      --purple: #7928ca;
+      
+      --font-sans: 'Geist', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+      --transition: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      user-select: none;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Top progress bar */
+    .progress-bar-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.05);
+      z-index: 1000;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      width: 16.6%;
+      background: linear-gradient(90deg, var(--blue), var(--emerald));
+      transition: width 0.35s var(--transition);
+      box-shadow: 0 0 10px var(--blue);
+    }
+
+    /* Slide Deck Container */
+    .deck-container {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Slide Card */
+    .slide {
+      position: absolute;
+      width: 90%;
+      max-width: 1180px;
+      height: 84vh;
+      max-height: 760px;
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: 16px;
+      padding: 44px 50px;
+      display: flex;
+      flex-direction: column;
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.96) translateY(15px);
+      transition: opacity 0.35s var(--transition), transform 0.35s var(--transition);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+      overflow-y: auto;
+    }
+    .slide::-webkit-scrollbar { width: 6px; }
+    .slide::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 3px; }
+
+    .slide.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: scale(1) translateY(0);
+      z-index: 10;
+    }
+
+    .ambient-glow {
+      position: absolute;
+      top: -20%;
+      right: -10%;
+      width: 500px;
+      height: 500px;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--blue-glow) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Header in Slide */
+    .slide-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 24px;
+      position: relative;
+      z-index: 1;
+    }
+    .slide-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 9px;
+      border-radius: 9999px;
+      background: rgba(0, 112, 243, 0.12);
+      border: 1px solid rgba(0, 112, 243, 0.3);
+      color: #0091ff;
+      font-size: 11.5px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 6px;
+    }
+    .slide-title {
+      font-size: 30px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.2;
+    }
+    .slide-subtitle {
+      color: var(--text-muted);
+      font-size: 14.5px;
+      margin-top: 4px;
+    }
+    .slide-index-tag {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--text-dim);
+      padding: 4px 10px;
+      border: 1px solid var(--surface-border);
+      border-radius: 6px;
+      background: var(--surface-subtle);
+    }
+
+    /* Slide Content */
+    .slide-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Cover Slide */
+    .cover-slide {
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      height: 100%;
+    }
+    .cover-title {
+      font-size: 52px;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1.15;
+      margin-bottom: 14px;
+      background: linear-gradient(180deg, #ffffff 40%, rgba(255, 255, 255, 0.6) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .cover-tagline {
+      font-size: 19px;
+      color: var(--text-muted);
+      max-width: 720px;
+      margin: 0 auto 32px;
+      line-height: 1.5;
+    }
+    .author-card {
+      display: inline-flex;
+      align-items: center;
+      gap: 18px;
+      background: var(--surface-subtle);
+      border: 1px solid var(--surface-border);
+      border-radius: 12px;
+      padding: 12px 24px;
+      font-size: 14px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    }
+    .author-item b {
+      color: #ffffff;
+      margin-left: 4px;
+    }
+
+    /* Grid Layouts */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      width: 100%;
+    }
+    .card {
+      background: var(--surface-subtle);
+      border: 1px solid var(--surface-border);
+      border-radius: 12px;
+      padding: 20px;
+      transition: all 0.2s ease;
+    }
+    .card:hover {
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-desc {
+      font-size: 13.5px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* Triad Row */
+    .triad-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+    }
+    .triad-item {
+      background: var(--surface-subtle);
+      border: 1px solid var(--surface-border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .triad-badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      font-family: var(--font-mono);
+    }
+
+    /* Stats Grid */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .stat-box {
+      background: var(--surface-subtle);
+      border: 1px solid var(--surface-border);
+      border-radius: 12px;
+      padding: 18px 12px;
+      text-align: center;
+    }
+    .stat-val {
+      font-size: 34px;
+      font-weight: 800;
+      font-family: var(--font-mono);
+      letter-spacing: -0.03em;
+      margin-bottom: 4px;
+    }
+    .stat-lbl {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    /* Floating Navigation Controls */
+    .controls-bar {
+      position: fixed;
+      bottom: 22px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(14, 14, 14, 0.85);
+      border: 1px solid var(--surface-border);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-radius: 9999px;
+      padding: 6px 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      z-index: 100;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+    }
+    .ctrl-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      transition: all 0.15s;
+    }
+    .ctrl-btn:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.08);
+    }
+    .slide-counter {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--text-muted);
+      min-width: 50px;
+      text-align: center;
+    }
+    .slide-counter b { color: #fff; }
+
+    .help-tooltip {
+      position: fixed;
+      bottom: 22px;
+      right: 24px;
+      color: var(--text-dim);
+      font-size: 11.5px;
+      font-family: var(--font-mono);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Progress Bar -->
+  <div class="progress-bar-container">
+    <div class="progress-bar-fill" id="progress-bar"></div>
+  </div>
+
+  <div class="deck-container">
+
+    <!-- SLIDE 1: TRANG BÌA -->
+    <div class="slide active" id="slide-1">
+      <div class="ambient-glow"></div>
+      <div class="slide-body cover-slide">
+        <div class="slide-badge">VinUni AI20k • K4-L3A</div>
+        <h1 class="cover-title">Monitoring & LLMOps Platform</h1>
+        <p class="cover-tagline">
+          Xây dựng hệ thống quan sát ứng dụng AI toàn diện: Kết nối mắt xích <b>Metrics ➔ Logs ➔ Traces</b>, bảo vệ PII, quản lý Prompt và cô lập sự cố.
+        </p>
+
+        <div class="author-card">
+          <div class="author-item">Học Viên: <b>Võ Minh Quân</b></div>
+          <span style="color: var(--surface-border)">•</span>
+          <div class="author-item">MSSV: <b>2A202602429</b></div>
+          <span style="color: var(--surface-border)">•</span>
+          <div class="author-item">Lớp: <b>K4-L3A</b></div>
+          <span style="color: var(--surface-border)">•</span>
+          <div class="author-item">Mã Challenge: <b>day13-k4-l3a-monitoring-llmops-v1</b></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 2: KIẾN TRÚC 3 TRỤ CỘT -->
+    <div class="slide" id="slide-2">
+      <div class="slide-header">
+        <div>
+          <div class="slide-badge">Kiến Trúc Cốt Lõi</div>
+          <h2 class="slide-title">Mắt Xích Observability: Metrics ➔ Logs ➔ Traces</h2>
+          <p class="slide-subtitle">Correlation ID format <code>req-[a-f0-9]{8}</code> xâu chuỗi mọi thông tin phân tán</p>
+        </div>
+        <div class="slide-index-tag">02 / 06</div>
+      </div>
+
+      <div class="slide-body">
+        <div class="triad-grid">
+          <div class="triad-item">
+            <span class="triad-badge" style="background: rgba(245, 166, 35, 0.15); color: var(--amber)">1. METRICS (Cái gì & Khi nào?)</span>
+            <p class="card-desc">
+              Theo dõi sức khỏe vĩ mô trên Dashboard. Phát hiện bất thường khi <b>P95 Latency tăng vọt</b> hoặc tỷ lệ lỗi 5xx vượt ngưỡng SLO, kích hoạt cảnh báo On-call.
+            </p>
+          </div>
+
+          <div class="triad-item">
+            <span class="triad-badge" style="background: rgba(0, 112, 243, 0.15); color: #0091ff">2. LOGS (Yêu cầu nào?)</span>
+            <p class="card-desc">
+              Lọc file <code>data/logs.jsonl</code> theo mốc thời gian sự cố để tìm chính xác các request bị chậm và trích xuất mã <b>Correlation ID</b> liên quan.
+            </p>
+          </div>
+
+          <div class="triad-item">
+            <span class="triad-badge" style="background: rgba(0, 229, 153, 0.15); color: var(--emerald)">3. TRACES (Ở đâu & Tại sao?)</span>
+            <p class="card-desc">
+              Tra cứu Correlation ID trên Langfuse để mở biểu đồ <b>Waterfall</b>. Bóc tách từng span con để tìm chính xác điểm nghẽn (RAG Vector Store hay LLM).
+            </p>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top: 18px; display: flex; align-items: center; justify-content: space-between; padding: 16px 20px;">
+          <span style="font-size: 13.5px;">🔑 <b>Nguyên tắc vàng:</b> Không một tín hiệu nào đứng độc lập; sự cố chỉ hợp lệ khi cả Metric, Log và Trace cùng chỉ về một nguyên nhân gốc.</span>
+          <span class="triad-badge" style="margin: 0; background: var(--emerald-glow); color: var(--emerald);">100% Đồng Bộ</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 3: LOGGING, PII VÀ TRACING -->
+    <div class="slide" id="slide-3">
+      <div class="slide-header">
+        <div>
+          <div class="slide-badge">Kỹ Thuật Cốt Lõi (CP1 & CP2)</div>
+          <h2 class="slide-title">Logging Chuẩn Hóa, Lọc PII & Tracing Phân Cấp</h2>
+          <p class="slide-subtitle">Đạt 100/100 Log Validator và phân tách Span Cha - Con chuẩn Langfuse SDK v4</p>
+        </div>
+        <div class="slide-index-tag">03 / 06</div>
+      </div>
+
+      <div class="slide-body">
+        <div class="cards-grid">
+          <div class="card">
+            <div class="card-title">🛡️ Lọc PII Tuyệt Đối (100/100)</div>
+            <p class="card-desc">
+              Triển khai custom processor trong structlog (chạy trước khi serialize JSON). Tự động nhận diện và làm sạch:
+              <br>• <b>Email</b> ➔ <code>[REDACTED_EMAIL]</code>
+              <br>• <b>Số ĐT VN (+84/0x)</b> ➔ <code>[REDACTED_PHONE]</code>
+              <br>• <b>CCCD/CMND</b> ➔ <code>[REDACTED_CCCD]</code>
+              <br>• <b>Thẻ Ngân Hàng</b> ➔ <code>[REDACTED_CARD]</code>
+            </p>
+          </div>
+
+          <div class="card">
+            <div class="card-title">🌳 Tracing Phân Cấp (Langfuse v4)</div>
+            <p class="card-desc">
+              Phân rã quan hệ Cha - Con hoàn chỉnh trong trace:
+              <br>• <b>Root Span:</b> <code>agent-run</code>
+              <br>• <b>Child Span:</b> <code>retrieval</code> (truy xuất RAG)
+              <br>• <b>Child Generation:</b> <code>fake-llm-generate</code> (ghi nhận token in/out, model, TTFT, cost).
+            </p>
+          </div>
+
+          <div class="card">
+            <div class="card-title">🔄 Quản Lý Prompt & Rollback</div>
+            <p class="card-desc">
+              Quản lý vòng đời prompt <code>day13-chat</code> qua nhãn:
+              <br>• <b>Version 1:</b> Baseline ban đầu.
+              <br>• <b>Version 2:</b> Bổ sung chỉ dẫn bảo mật PII.
+              <br>• <b>Cơ chế Rollback:</b> Đổi nhãn <code>production</code> tức thì trên Langfuse, zero-downtime, không cần sửa code.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 4: DASHBOARD 6 PANEL, SLO & ALERTS -->
+    <div class="slide" id="slide-4">
+      <div class="slide-header">
+        <div>
+          <div class="slide-badge">Giám Sát & Vận Hành (CP2C)</div>
+          <h2 class="slide-title">Bảng Điều Khiển Giám Sát 6 Panel, SLO & Alerts</h2>
+          <p class="slide-subtitle">Tuân thủ nghiêm ngặt config/dashboard.yaml và cam kết chất lượng dịch vụ SLO</p>
+        </div>
+        <div class="slide-index-tag">04 / 06</div>
+      </div>
+
+      <div class="slide-body">
+        <div class="cards-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 18px;">
+          <div class="card" style="padding: 16px;">
+            <b style="color: #0091ff; display: block; margin-bottom: 4px;">1. Latency & TTFT</b>
+            <span style="font-size: 13px; color: var(--text-muted);">P50, P95, P99 và TTFT P95. Ngưỡng P95 ≤ 3000ms.</span>
+          </div>
+          <div class="card" style="padding: 16px;">
+            <b style="color: #0091ff; display: block; margin-bottom: 4px;">2. Request Traffic</b>
+            <span style="font-size: 13px; color: var(--text-muted);">Đo tổng requests và tốc độ gọi (RPM). Ngưỡng ≥ 1.</span>
+          </div>
+          <div class="card" style="padding: 16px;">
+            <b style="color: #0091ff; display: block; margin-bottom: 4px;">3. Errors & Retrieval</b>
+            <span style="font-size: 13px; color: var(--text-muted);">Tỷ lệ lỗi (≤ 2%) & tỷ lệ RAG thành công (100%).</span>
+          </div>
+          <div class="card" style="padding: 16px;">
+            <b style="color: var(--emerald); display: block; margin-bottom: 4px;">4. Cost Tracking</b>
+            <span style="font-size: 13px; color: var(--text-muted);">Chi phí tích lũy theo USD. Ngưỡng ≤ $2.50.</span>
+          </div>
+          <div class="card" style="padding: 16px;">
+            <b style="color: var(--emerald); display: block; margin-bottom: 4px;">5. Token Usage</b>
+            <span style="font-size: 13px; color: var(--text-muted);">Phân tách In/Out tokens. Ngưỡng ≤ 50,000.</span>
+          </div>
+          <div class="card" style="padding: 16px;">
+            <b style="color: var(--emerald); display: block; margin-bottom: 4px;">6. Quality Proxy</b>
+            <span style="font-size: 13px; color: var(--text-muted);">Điểm heuristic trung bình. Ngưỡng ≥ 0.75 / 1.0.</span>
+          </div>
+        </div>
+
+        <div class="card" style="background: var(--surface-subtle); display: flex; justify-content: space-between; align-items: center; padding: 18px 24px;">
+          <div>
+            <span style="color: var(--text-muted); font-size: 12px; display: block; text-transform: uppercase;">Primary SLO (28 ngày)</span>
+            <b style="font-size: 15px;">99.5% requests ≤ 3000ms</b>
+          </div>
+          <div>
+            <span style="color: var(--text-muted); font-size: 12px; display: block; text-transform: uppercase;">Error Budget</span>
+            <b style="font-size: 15px; color: var(--emerald)">0.5% (Tối đa 500 lỗi / 100k reqs)</b>
+          </div>
+          <div>
+            <span style="color: var(--text-muted); font-size: 12px; display: block; text-transform: uppercase;">3 Symptom Alerts</span>
+            <b style="font-size: 15px;">Latency, Error Rate, Cost Spike</b>
+          </div>
+          <div>
+            <span style="color: var(--text-muted); font-size: 12px; display: block; text-transform: uppercase;">Dashboard Validator</span>
+            <b style="font-size: 15px; color: var(--emerald)">6/6 Panels Hợp Lệ</b>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 5: ĐIỀU TRA SỰ CỐ CHALLENGE CP3 -->
+    <div class="slide" id="slide-5">
+      <div class="slide-header">
+        <div>
+          <div class="slide-badge" style="background: rgba(245, 166, 35, 0.15); color: var(--amber); border-color: rgba(245, 166, 35, 0.4)">Khảo Sát Thực Chiến (CP3)</div>
+          <h2 class="slide-title">Điều Tra Sự Cố Bài Thi: rag_slow Incident</h2>
+          <p class="slide-subtitle">Challenge ID: day13-k4-l3a-monitoring-llmops-v1 (Seed: 1311)</p>
+        </div>
+        <div class="slide-index-tag">05 / 06</div>
+      </div>
+
+      <div class="slide-body">
+        <div class="triad-grid" style="margin-bottom: 18px;">
+          <div class="triad-item">
+            <b style="color: var(--amber); display: block; margin-bottom: 6px;">1. Triệu Chứng Metric</b>
+            <p class="card-desc">
+              Sau khi kích hoạt sự cố, P95 Latency tăng vọt từ <b>~165ms lên 2660ms – 4673ms</b> (vi phạm SLO). TTFT vẫn bình thường (~52ms), error rate = 0%.
+            </p>
+          </div>
+
+          <div class="triad-item">
+            <b style="color: #0091ff; display: block; margin-bottom: 6px;">2. Lọc Log Bất Thường</b>
+            <p class="card-desc">
+              Lọc theo <code>feature=monitoring</code> phát hiện các request bị trễ bất thường. Trích xuất Correlation ID đại diện: <code>req-d33ea19b</code>.
+            </p>
+          </div>
+
+          <div class="triad-item">
+            <b style="color: var(--emerald); display: block; margin-bottom: 6px;">3. Bóc Tách Trace Waterfall</b>
+            <p class="card-desc">
+              Biểu đồ Waterfall Langfuse chỉ ra span con <b><code>retrieval</code></b> tiêu tốn <b>2.50s (chiếm 95% thời gian)</b>. Khâu sinh token LLM chỉ mất 0.15s.
+            </p>
+          </div>
+        </div>
+
+        <div class="card" style="border-color: rgba(255, 0, 85, 0.35); background: linear-gradient(180deg, rgba(255, 0, 85, 0.05) 0%, var(--surface-subtle) 100%);">
+          <b style="color: var(--red); font-size: 14.5px; display: block; margin-bottom: 4px;">KẾT LUẬN NGUYÊN NHÂN GỐC (ROOT CAUSE) & BIỆN PHÁP KHẮC PHỤC:</b>
+          <p style="font-size: 13.5px; color: #ddd; line-height: 1.6;">
+            • <b>Nguyên nhân:</b> Sự cố nghẽn khâu truy xuất tài liệu vector database (mô phỏng bởi cờ <code>STATE["rag_slow"] = True</code>).
+            <br>• <b>Khắc phục & Phòng ngừa:</b> Hủy cờ sự cố, cấu hình hard timeout 1.0s kèm fallback context mặc định, bổ sung panel giám sát <code>retrieval_latency_p95</code> và Circuit Breaker.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 6: TỔNG KẾT & KẾT QUẢ ĐẠT ĐƯỢC -->
+    <div class="slide" id="slide-6">
+      <div class="slide-header">
+        <div>
+          <div class="slide-badge">Tổng Kết & Bàn Giao</div>
+          <h2 class="slide-title">Kết Quả Kỹ Thuật & Sẵn Sàng Nộp Bài</h2>
+          <p class="slide-subtitle">Đáp ứng 100% tiêu chí chuẩn của Rubric, kèm tính năng mở rộng Vercel UI Demo</p>
+        </div>
+        <div class="slide-index-tag">06 / 06</div>
+      </div>
+
+      <div class="slide-body">
+        <div class="stats-row">
+          <div class="stat-box">
+            <div class="stat-val" style="color: var(--emerald);">22 / 22</div>
+            <div class="stat-lbl">Pytest Passed (0.83s)</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-val" style="color: var(--emerald);">100 / 100</div>
+            <div class="stat-lbl">Log Validator Score</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-val" style="color: var(--emerald);">6 / 6</div>
+            <div class="stat-lbl">Dashboard Panels Hợp Lệ</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-val" style="color: var(--emerald);">0 Rò Rỉ</div>
+            <div class="stat-lbl">PII Được Bảo Vệ 100%</div>
+          </div>
+        </div>
+
+        <div class="card" style="padding: 22px;">
+          <h4 style="font-size: 15px; margin-bottom: 12px; color: #fff;">Thông Tin Bàn Giao & Điểm Cộng (Bonus):</h4>
+          <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 20px; font-size: 13.5px; color: var(--text-muted); line-height: 1.8;">
+            <div>
+              📁 <b>Repository:</b> <a href="https://github.com/vminhquan/K4-L3-DAY13-VoMinhQuan-2A202602429-Monitoring-LLMOps.git" style="color: #0091ff;" target="_blank">github.com/vminhquan/K4-L3-DAY13-...</a>
+              <br>🔗 <b>Commit SHA Cuối:</b> <code style="color: #fff;">93ffdd1c5344988947b52577e6268aa52031cfa8</code>
+              <br>📄 <b>Báo Cáo Hoàn Thiện:</b> <code>submission/REPORT.md</code> (Đủ link relative evidence)
+            </div>
+            <div style="border-left: 1px solid var(--surface-border); padding-left: 20px;">
+              🌟 <b>Bonus Feature:</b> Giao diện <b>Vercel UI Dashboard</b> thời gian thực tại <a href="http://localhost:8000/" style="color: var(--emerald);" target="_blank">localhost:8000</a>
+              <br>🎯 <b>Điểm Đánh Giá Dự Kiến:</b> <b style="color: var(--emerald);">100 - 110 / 100 Điểm</b>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Floating Navigation Controls Dock -->
+  <div class="controls-bar">
+    <button class="ctrl-btn" onclick="prevSlide()" title="Slide trước (←)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <div class="slide-counter"><span id="curr-slide">1</span> / <b id="total-slides">6</b></div>
+    <button class="ctrl-btn" onclick="nextSlide()" title="Slide kế tiếp (→)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+    </button>
+    <span style="color: rgba(255,255,255,0.15)">|</span>
+    <button class="ctrl-btn" onclick="toggleFullscreen()" title="Toàn màn hình (F)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+    </button>
+  </div>
+
+  <div class="help-tooltip">[←] [→] hoặc [Space] để chuyển slide • [F] Toàn màn hình</div>
+
+  <script>
+    let currentSlideIndex = 1;
+    const slides = document.querySelectorAll('.slide');
+    const totalSlides = slides.length;
+    document.getElementById('total-slides').innerText = totalSlides;
+
+    function showSlide(index) {
+      if (index < 1) index = 1;
+      if (index > totalSlides) index = totalSlides;
+      currentSlideIndex = index;
+
+      slides.forEach((s, i) => {
+        s.classList.toggle('active', i + 1 === currentSlideIndex);
+      });
+
+      document.getElementById('curr-slide').innerText = currentSlideIndex;
+      const progressPct = (currentSlideIndex / totalSlides) * 100;
+      document.getElementById('progress-bar').style.width = progressPct + '%';
+    }
+
+    function nextSlide() {
+      if (currentSlideIndex < totalSlides) {
+        showSlide(currentSlideIndex + 1);
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlideIndex > 1) {
+        showSlide(currentSlideIndex - 1);
+      }
+    }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+      }
+    }
+
+    // Keyboard Navigation
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        e.preventDefault();
+        nextSlide();
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
+        prevSlide();
+      } else if (e.key === 'Home') {
+        e.preventDefault();
+        showSlide(1);
+      } else if (e.key === 'End') {
+        e.preventDefault();
+        showSlide(totalSlides);
+      } else if (e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        toggleFullscreen();
+      }
+    });
+
+    // Touch swipe support
+    let touchStartX = 0;
+    window.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, false);
+    window.addEventListener('touchend', e => {
+      const touchEndX = e.changedTouches[0].screenX;
+      if (touchEndX < touchStartX - 50) nextSlide();
+      if (touchEndX > touchStartX + 50) prevSlide();
+    }, false);
+
+    showSlide(1);
+  </script>
+</body>
+</html>

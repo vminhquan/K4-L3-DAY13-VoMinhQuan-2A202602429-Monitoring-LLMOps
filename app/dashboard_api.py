@@ -412,3 +412,20 @@ async def serve_dashboard_ui():
     if not ui_path.exists():
         raise HTTPException(status_code=404, detail="UI file not found")
     return HTMLResponse(content=ui_path.read_text(encoding="utf-8"))
+
+
+@router.get("/slides", response_class=HTMLResponse)
+async def serve_slides():
+    slides_path = Path(__file__).parent / "static" / "slides.html"
+    if not slides_path.exists():
+        raise HTTPException(status_code=404, detail="Slides file not found")
+    return HTMLResponse(content=slides_path.read_text(encoding="utf-8"))
+
+
+@router.get("/assistant", response_class=HTMLResponse)
+@router.get("/bot", response_class=HTMLResponse)
+async def serve_assistant():
+    bot_path = Path(__file__).parent / "static" / "assistant.html"
+    if not bot_path.exists():
+        raise HTTPException(status_code=404, detail="Assistant file not found")
+    return HTMLResponse(content=bot_path.read_text(encoding="utf-8"))
